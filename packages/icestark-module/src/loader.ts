@@ -3,7 +3,8 @@ import { getGlobalProp, noteGlobalProps } from './global';
 
 export interface StarkModule {
   name: string;
-  url: string|string[];
+  url?: string|string[];
+  render?: (...props: any) => any;
   mount?: (Component: any, targetNode: HTMLElement, props?: any) => void;
   unmount?: (targetNode: HTMLElement) => void;
 };

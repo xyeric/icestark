@@ -39,6 +39,11 @@ const modules = [{
   mount: defaultMount,
   unmount: defaultUnmount,
 }, {
+  name: 'localComponent',
+  render: () => <div>hello</div>,
+  mount: defaultMount,
+  unmount: defaultUnmount,
+}, {
   name: 'error',
   url: 'http://127.0.0.1:3334/error.js',
 }];
@@ -90,6 +95,14 @@ describe('render modules', () => {
     const { container } = render(<MicroModule moduleName="selfComponent" />);
     setTimeout(() => {
       expect(container.innerHTML).toBe('<div><div><h2>404</h2></div></div>');
+      next();
+    }, 0);
+  });
+
+  test('render MicroModule with name', (next) => {
+    const { container } = render(<MicroModule moduleName="localComponent" />);
+    setTimeout(() => {
+      expect(container.innerHTML).toBe('<div><div>hello</div></div>');
       next();
     }, 0);
   });

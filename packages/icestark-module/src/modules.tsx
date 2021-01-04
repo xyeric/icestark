@@ -12,6 +12,12 @@ const IS_CSS_REGEX = /\.css(\?((?!\.js$).)+)?$/;
 export const moduleLoader = new ModuleLoader();
 
 export const registerModules = (modules: StarkModule[]) => {
+  modules.forEach(m => {
+    if(!m.url && !m.render) {
+      console.log('[icestark module] url and render cannot both be empty. name: %s', m.name);
+    }
+  });
+
   globalModules = modules;
 };
 
@@ -150,17 +156,23 @@ export const getModules = function () {
  */
 
 export const loadModule = async(targetModule: StarkModule, sandbox?: ISandbox) => {
-  const { name, url } = targetModule;
+  const { name, url, render } = targetModule;
   let moduleSandbox = null;
   if (!importModules[name]) {
-    const { jsList, cssList } = parseUrlAssets(url);
-    moduleSandbox = createSandbox(sandbox);
-    const moduleInfo = await moduleLoader.execModule({ name, url: jsList }, moduleSandbox);
-    importModules[name] = {
-      moduleInfo,
-      moduleSandbox,
-      moduleCSS: cssList,
-    };
+    if (url) {
+      const { jsList, cssList } = parseUrlAssets(url);
+      moduleSandbox = createSandbox(sandbox);
+      const moduleInfo = await moduleLoader.execModule({ name, url: jsList }, moduleSandbox);
+      importModules[name] = {
+        moduleInfo,
+        moduleSandbox,
+        moduleCSS: cssList,
+      };
+    } else if (render && typeof render === 'function') {
+      importModules[name] = {
+        moduleInfo: targetModule,
+      };
+    }
   }
 
   const { moduleInfo, moduleCSS } = importModules[name];
@@ -172,12 +184,14 @@ export const loadModule = async(targetModule: StarkModule, sandbox?: ISandbox) =
   }
 
   const mount = targetModule.mount || moduleInfo?.mount || defaultMount;
-  const component = moduleInfo.default || moduleInfo;
+  const component = moduleInfo.default || render || moduleInfo;
 
   // append css before mount module
-  const cssList = filterAppendCSS(moduleCSS);
-  if (cssList.length) {
-    await Promise.all(cssList.map((css: string) => appendCSS(name, css)));
+  if (moduleCSS) {
+    const cssList = filterAppendCSS(moduleCSS);
+    if (cssList.length) {
+      await Promise.all(cssList.map((css: string) => appendCSS(name, css)));
+    }
   }
 
   return {
